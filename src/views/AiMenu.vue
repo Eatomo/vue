@@ -100,37 +100,76 @@ export default {
         this.$router.push('/home');
       }, 700);
     },
+
     handleFileChange(event) {
       const file = event.target.files[0];
       this.fileName = file ? `已選擇檔案：${file.name}` : '未選擇檔案';
     },
-    submitData() {
+
+    async submitData() {
       this.isLoading = true;
       this.menuResult = '';
-      setTimeout(() => {
+
+      const form = document.getElementById('manualForm');
+      const formData = new FormData(form);
+      const food_allergy = formData.get('allergy');
+      const health_goal = formData.get('goal');
+      const diet_preference = formData.get('habit');
+      const age = parseInt(formData.get('age'));
+      const height = parseFloat(formData.get('height'));
+      const weight = parseFloat(formData.get('weight'));
+
+      try {
+        const response = await fetch('https://backage-2dtn.onrender.com/generate-menu', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ food_allergy, health_goal, diet_preference, age, height, weight })
+        });
+
+        const data = await response.json();
+        console.log('後端回傳：', data);
+
         this.isLoading = false;
-        this.menuResult = this.generateMockMenu();
-      }, 2000);
+        this.menuResult = this.generateMenuHTML(data.result);
+      } catch (err) {
+        console.error('提交錯誤', err);
+        this.isLoading = false;
+        this.menuResult = '<p>❌ 無法生成菜單，請稍後再試</p>';
+      }
     },
-    generateMockMenu() {
+
+    generateMenuHTML(result) {
+      if (!result) return '<p>找不到資料</p>';
+
+      const createSection = (title, items) => `
+        <div class="meal-section">
+          <h4>${title}</h4>
+          <ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>
+        </div>
+      `;
+
       return `
         <div class="day-card">
           <h3>第1天</h3>
-          <p>早餐：地瓜燕麥粥 + 無糖豆漿</p>
-          <p>午餐：烤雞胸佐時蔬 + 糙米飯</p>
-          <p>晚餐：蒸鮭魚 + 青花菜 + 紫米飯</p>
+          ${createSection('早餐 (Breakfast)', result["Day 1"].Breakfast)}
+          ${createSection('午餐 (Lunch)', result["Day 1"].Lunch)}
+          ${createSection('晚餐 (Dinner)', result["Day 1"].Dinner)}
+          ${createSection('飲料點心 (Snack)', result["Day 1"].Snack)}
         </div>
         <div class="day-card">
           <h3>第2天</h3>
-          <p>早餐：酪梨吐司 + 水煮蛋</p>
-          <p>午餐：牛肉炒蔬菜 + 藜麥</p>
-          <p>晚餐：番茄豆腐鍋 + 玉米飯</p>
+          ${createSection('早餐 (Breakfast)', result["Day 2"].Breakfast)}
+          ${createSection('午餐 (Lunch)', result["Day 2"].Lunch)}
+          ${createSection('晚餐 (Dinner)', result["Day 2"].Dinner)}
+          ${createSection('飲料點心 (Snack)', result["Day 2"].Snack)}
         </div>
       `;
     },
+
     regenMenu() {
       this.submitData();
     },
+
     setupVolume() {
       const savedVolume = localStorage.getItem('backgroundMusicVolume');
       this.volume = savedVolume !== null ? parseFloat(savedVolume) : 0.5;
@@ -139,11 +178,11 @@ export default {
       }
     },
   },
+
   mounted() {
     this.setupVolume();
   },
 
-  // ✅ 正確位置的離開處理
   beforeRouteLeave(to, from, next) {
     if (this.$refs.bgMusic) {
       this.$refs.bgMusic.pause();
@@ -153,6 +192,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 @import '../assets/css/styles.css';
