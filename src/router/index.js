@@ -14,7 +14,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/vue/'),  // ✅ 這裡加 /vue/
   routes
 });
 
