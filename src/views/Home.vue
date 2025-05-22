@@ -10,13 +10,20 @@
 
     <!-- 音量控制器 -->
     <div class="volume-control">
-      🔊 音量：
+      🔊 
       <input type="range" v-model="volume" min="0" max="1" step="0.01">
       <span>{{ Math.round(volume * 100) }}%</span>
     </div>
 
     <!-- 背景音樂 -->
-    <audio ref="bgMusic" :src="bgMusicSrc" autoplay loop preload="auto"></audio>
+    <audio
+      v-if="$route.path === '/home'"
+      ref="bgMusic"
+      :src="bgMusicSrc"
+      autoplay
+      loop
+      preload="auto"
+    ></audio>
     <!-- 點擊音效 -->
     <audio ref="clickSound" :src="clickSoundSrc" preload="auto"></audio>
 
@@ -25,6 +32,18 @@
       <div class="today-info-card">
         <div>{{ todayDate }}</div>
         <div>{{ todayWeather }}</div>
+      </div>
+
+      <!-- 愛料理搜尋 -->
+      <div class="icook-search-bar">
+        <input
+          v-model="icookKeyword"
+          @keyup.enter="searchIcook"
+          type="text"
+          placeholder="請輸入菜名或食材再點搜尋"
+          class="icook-input"
+        />
+        <button @click="searchIcook" class="icook-search-btn">搜尋</button>
       </div>
 
       <!-- 分類按鈕 -->
@@ -72,19 +91,17 @@ export default {
       volume: 0.5,
       todayDate: '',
       todayWeather: '',
+      icookKeyword: '',
       categories: [
         { name: 'AI菜單生成', path: '/Ai-menu' },
-        { name: '最新食譜', path: '/Newest' },
-        { name: '人氣食譜', path: '/Popular' },
-        { name: '潤餅皮料理', path: '/Springroll' },
-        { name: '低卡瘦身', path: '/Lowcal' },
-        { name: '蒜頭', path: '/Garlic' },
-        { name: '番茄', path: '/Tomato' },
-        { name: '蘆筍', path: '/Asparagus' },
-        { name: '早餐', path: '/Breakfast' },
-        { name: '素食/蔬食', path: '/Vegan' },
-        { name: '烘焙點心&甜點', path: '/Dessert' },
-        { name: '親子', path: '/Family' }
+        { name: '3高', path: '/ThreeHigh' },
+        { name: '健身', path: '/Fitness' },
+        { name: '素食', path: '/Vegetarian' },
+        { name: '兒童', path: '/Children' },
+        { name: '上班族', path: '/Office' },
+        { name: '銀髮族', path: '/Elderly' },
+        { name: '歷史菜單', path: '/History' },
+        { name: '執行度&滿意度', path: '/Feedback' }
       ]
     };
   },
@@ -112,6 +129,12 @@ export default {
     openLink(url) {
       window.open(url, '_blank');
     },
+    searchIcook() {
+      if (this.icookKeyword.trim()) {
+        const keyword = encodeURIComponent(this.icookKeyword.trim());
+        window.open(`https://icook.tw/search/${keyword}`, '_blank');
+      }
+    },
     fetchWeather() {
       const apiKey = 'd1c8fa0e63745ae8af24bf7c8ebe5dcf';
       navigator.geolocation.getCurrentPosition(
@@ -136,12 +159,23 @@ export default {
     }
   },
   mounted() {
+    // 先暫停所有首頁的背景音樂（避免重複播放）
+    const allHomeBgMusics = document.querySelectorAll('.home-page audio');
+    allHomeBgMusics.forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+
+    // 下面是你原本的內容
     const savedVolume = localStorage.getItem('backgroundMusicVolume');
     if (savedVolume !== null) {
       this.volume = parseFloat(savedVolume);
     }
     if (this.$refs.bgMusic) {
       this.$refs.bgMusic.volume = this.volume;
+      // 確保只播放一次
+      this.$refs.bgMusic.currentTime = 0;
+      this.$refs.bgMusic.play();
     }
 
     if (!localStorage.getItem('loggedInUser')) {
@@ -153,8 +187,6 @@ export default {
     this.todayDate = `📅 今日日期：${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
     this.fetchWeather();
   },
-
-  // ✅ 正確位置的離開處理
   beforeRouteLeave(to, from, next) {
     if (this.$refs.bgMusic) {
       this.$refs.bgMusic.pause();
@@ -167,4 +199,34 @@ export default {
 
 <style scoped>
 @import '../assets/css/styles.css';
+
+.icook-search-bar {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+}
+.icook-input {
+  flex: 2;
+  padding: 20px 300px;
+  border: 1px solid #f0ff6c;
+  border-radius: 4px;
+  font-size: 1.5em; /* 字體大兩倍 */
+  width: 100%;    /* 填滿父容器 */
+  box-sizing: border-box;
+}
+
+
+.icook-search-btn {
+  margin-left: 8px;
+  padding: 7px 20px;      /* 原本 6px 16px，放大兩倍 */
+  font-size: 2em;          /* 新增，字體放大兩倍 */
+  background: #0066ff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.icook-search-btn:hover {
+  background: #b800e6;
+}
 </style>

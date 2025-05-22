@@ -1,9 +1,9 @@
 <template>
   <div class="ai-menu-page">
-    <!-- 回首頁 -->
-    <router-link to="/home" class="home-button" @click.native.prevent="playClickSoundAndNavigate">
-      <img src="../assets/images/home-avocado.jpg" alt="回首頁" class="home-icon" />
-    </router-link>
+<!-- 修改後 -->
+<button class="home-button" @click="playClickSoundAndNavigate">
+  <img src="../assets/images/home-avocado.jpg" alt="回首頁" class="home-icon" />
+</button>
 
     <!-- 背景音樂 -->
     <audio ref="bgMusic" :src="bgMusicSrc" autoplay loop preload="auto"></audio>
@@ -13,7 +13,7 @@
 
     <!-- 音量控制器 -->
     <div class="volume-control">
-      🔊 音量：
+      🔊 
       <input type="range" v-model="volume" min="0" max="1" step="0.01" />
       <span>{{ Math.round(volume * 100) }}%</span>
     </div>
@@ -76,30 +76,28 @@ export default {
       }
     },
   },
-  methods: {
-    playClickSoundAndNavigate() {
-      const clickSound = this.$refs.clickSound;
-      const bgMusic = this.$refs.bgMusic;
+methods: {
+  playClickSoundAndNavigate(event) {
+    event && event.preventDefault();
+    const clickSound = this.$refs.clickSound;
+    const bgMusic = this.$refs.bgMusic;
 
-      if (bgMusic) {
-        bgMusic.pause();
-      }
+    if (bgMusic) {
+      bgMusic.pause();
+    }
 
-      if (clickSound) {
-        clickSound.currentTime = 0;
-        clickSound.volume = 1.0;
-        clickSound.play().catch((error) => {
-          console.error('點擊音效播放失敗', error);
-        });
-      }
+    if (clickSound) {
+      clickSound.currentTime = 0;
+      clickSound.volume = 1.0;
+      clickSound.play().catch((error) => {
+        console.error('點擊音效播放失敗', error);
+      });
+    }
 
-      setTimeout(() => {
-        if (bgMusic) {
-          bgMusic.play();
-        }
-        this.$router.push('/home');
-      }, 700);
-    },
+    setTimeout(() => {
+      this.$router.push('/home');
+    }, 300); // 音效長度可調整
+  },
 
     handleFileChange(event) {
       const file = event.target.files[0];
@@ -179,17 +177,25 @@ export default {
     },
   },
 
-  mounted() {
-    this.setupVolume();
-  },
+mounted() {
+  this.setupVolume();
 
-  beforeRouteLeave(to, from, next) {
-    if (this.$refs.bgMusic) {
-      this.$refs.bgMusic.pause();
-      this.$refs.bgMusic.currentTime = 0;
-    }
-    next();
+  // 進入本頁時，暫停首頁背景音樂
+  const homeBgMusic = document.querySelector('.home-page audio');
+  if (homeBgMusic && !homeBgMusic.paused) {
+    homeBgMusic.pause();
+    homeBgMusic.currentTime = 0;
   }
+},
+
+beforeRouteLeave(to, from, next) {
+  // 離開本頁時，暫停本頁背景音樂
+  if (this.$refs.bgMusic) {
+    this.$refs.bgMusic.pause();
+    this.$refs.bgMusic.currentTime = 0;
+  }
+  next();
+}
 };
 </script>
 

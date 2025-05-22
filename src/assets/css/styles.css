@@ -1,3 +1,10 @@
+body, #app {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+}
 /* ===== 🌟 左上角固定回首頁按鈕 ===== */
 .home-button {
   position: fixed;
@@ -57,16 +64,17 @@
 /* ===== 🎵 背景音樂音量控制器樣式（左上角版） ===== */
 .volume-control {
   position: fixed;
-  top: 90px; /* 調整至頁面左上方 */
+  top: 90px;
   right: 20px;
-  background: linear-gradient(135deg, #f0a1f9, #fd82e9); /* 使用漸變色背景 */
-  padding: 15px 20px;
-  border-radius: 30px; /* 更圓潤的邊角 */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* 更強的陰影效果 */
+  background: linear-gradient(135deg, #f0a1f9, #fd82e9);
+  padding: 15px 18px;         /* 調小內距 */
+  min-width: 100px;          /* 設定最小寬度 */
+  border-radius: 30px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   font-size: 16px;
   display: flex;
   align-items: center;
-  gap: 10px; /* 增加按鈕與音量條的間距 */
+  gap: 8px;                  /* 間距也可稍微縮小 */
   z-index: 1000;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -112,7 +120,7 @@
 
 
 #volumeSlider {
-  width: 60px;
+  width: 50px;
 }
 
 .home-page {

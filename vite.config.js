@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import path from 'path';
 
 export default defineConfig({
-  base: '/vue/',  // ✅ 這一行是關鍵
+  base: process.env.NODE_ENV === 'production' ? '/vue/' : '/',
   plugins: [vue()],
   resolve: {
     alias: {
