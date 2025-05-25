@@ -4,6 +4,7 @@ import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
 import Home from '../views/Home.vue';
 import AiMenu from '../views/AiMenu.vue';
+import pdf from '../views/pdf.vue';
 import ThreeHigh from '../views/ThreeHigh.vue';
 import Fitness from '../views/Fitness.vue';
 import Vegetarian from '../views/Vegetarian.vue';
@@ -19,6 +20,7 @@ const routes = [
   { path: '/register', component: Register },
   { path: '/home', component: Home },
   { path: '/Ai-menu', component: AiMenu },
+  { path: '/pdf-menu', component:  pdf },
   { path: '/ThreeHigh', component: ThreeHigh },
   { path: '/Fitness', component: Fitness },
   { path: '/Vegetarian', component: Vegetarian },

@@ -51,30 +51,45 @@
         <h1 class="main-title">🍽️ 我的食譜菜單APP</h1>
         <p class="subtitle">選擇一個分類，開始探索美味生活！</p>
         <div class="category-bar">
-          <router-link v-for="category in categories" :key="category.name" :to="category.path" class="category-button">
+          <router-link
+            v-for="category in categories"
+            :key="category.name"
+            :to="category.path"
+            :class="['category-button', getCategoryClass(category.name)]"
+          >
             {{ category.name }}
           </router-link>
         </div>
       </div>
 
-      <!-- 熱門推薦 -->
-      <div class="hot-topics-card">
-        <h2 class="hot-topics-title">🔥 今日熱門菜單 / 食譜推薦</h2>
-        <div class="hot-topic-item" @click="openLink('https://icook.tw/recipes/474701')">
-          <img src="https://imageproxy.icook.network/resize?type=auto&url=http://tokyo-kitchen.icook.tw.s3.amazonaws.com/uploads/recipe/cover/474701/38bf975dd10047d8.jpg&stripmeta=true&background=255,255,255&width=600&nocrop=true" alt="無生蛋提拉米蘇食譜">
-          <div class="hot-topic-text">
-            <h3>超夯無生蛋提拉米蘇自製食譜</h3>
-            <p>3分鐘快速學無生蛋提拉米蘇，春季必吃！</p>
-          </div>
-        </div>
-        <div class="hot-topic-item" @click="openLink('https://icook.tw/recipes/245864')">
-          <img src="https://imageproxy.icook.network/resize?background=255%2C255%2C255&height=150&nocrop=false&stripmeta=true&type=auto&url=http%3A%2F%2Ftokyo-kitchen.icook.tw.s3.amazonaws.com%2Fuploads%2Frecipe%2Fcover%2F245864%2F0528273464edef2c.jpg&width=200" alt="蘋果塔">
-          <div class="hot-topic-text">
-            <h3>影片手把手教你做蘋果塔</h3>
-            <p>簡單5分鐘上桌，清爽又低負擔！</p>
-          </div>
-        </div>
+<!-- 熱門推薦（加上重新生成按鈕） -->
+<div class="hot-topics-card">
+  <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+    <h2 class="hot-topics-title" style="margin: 0;">🔥 今日熱門菜單 / 食譜推薦</h2>
+    <button
+      class="refresh-btn"
+      @click="fetchPopularRecipes"
+      :disabled="loadingPopular"
+      title="重新生成推薦"
+    >🔄 重新生成</button>
+  </div>
+  <div v-if="loadingPopular" class="loading">載入中...</div>
+  <div v-else-if="popularError" class="error">{{ popularError }}</div>
+  <div v-else class="hot-topics-list">
+    <div
+      v-for="item in popularRecipes"
+      :key="item.link"
+      class="hot-topic-item"
+      @click="openLink(item.link)"
+    >
+      <img :src="item.image" :alt="item.title" />
+      <div class="hot-topic-text">
+        <h3>{{ item.title }}</h3>
+        <p>{{ item.description || '（無描述）' }}</p>
       </div>
+    </div>
+  </div>
+</div>
     </div>
   </div>
 </template>
@@ -93,7 +108,8 @@ export default {
       todayWeather: '',
       icookKeyword: '',
       categories: [
-        { name: 'AI菜單生成', path: '/Ai-menu' },
+        { name: '手動輸入數據-AI菜單生成', path: '/Ai-menu' },
+        { name: '上傳PDF--菜單生成', path: '/pdf-menu' },
         { name: '3高', path: '/ThreeHigh' },
         { name: '健身', path: '/Fitness' },
         { name: '素食', path: '/Vegetarian' },
@@ -102,7 +118,10 @@ export default {
         { name: '銀髮族', path: '/Elderly' },
         { name: '歷史菜單', path: '/History' },
         { name: '執行度&滿意度', path: '/Feedback' }
-      ]
+      ],
+      popularRecipes: [],
+      loadingPopular: false,
+      popularError: ''
     };
   },
   watch: {
@@ -114,6 +133,28 @@ export default {
     }
   },
   methods: {
+    getCategoryClass(name) {
+     return ['手動輸入數據-AI菜單生成', '上傳PDF--菜單生成'].includes(name)
+       ? 'category-ai'
+       : 'category-other';
+    },
+    async fetchPopularRecipes() {
+      this.loadingPopular = true;
+      this.popularError = '';
+      try {
+        const res = await fetch('https://backage-2dtn.onrender.com/popular-recipes');
+        const data = await res.json();
+        if (data.success) {
+          this.popularRecipes = data.recipes;
+        } else {
+          this.popularError = '熱門食譜取得失敗';
+        }
+      } catch (err) {
+        this.popularError = '無法連線到熱門食譜伺服器';
+      } finally {
+        this.loadingPopular = false;
+      }
+    },
     logout() {
       localStorage.removeItem('loggedInUser');
       this.$router.push('/login');
@@ -159,33 +200,28 @@ export default {
     }
   },
   mounted() {
-    // 先暫停所有首頁的背景音樂（避免重複播放）
     const allHomeBgMusics = document.querySelectorAll('.home-page audio');
     allHomeBgMusics.forEach(audio => {
       audio.pause();
       audio.currentTime = 0;
     });
-
-    // 下面是你原本的內容
     const savedVolume = localStorage.getItem('backgroundMusicVolume');
     if (savedVolume !== null) {
       this.volume = parseFloat(savedVolume);
     }
     if (this.$refs.bgMusic) {
       this.$refs.bgMusic.volume = this.volume;
-      // 確保只播放一次
       this.$refs.bgMusic.currentTime = 0;
       this.$refs.bgMusic.play();
     }
-
     if (!localStorage.getItem('loggedInUser')) {
       alert('請先登入');
       this.$router.push('/login');
     }
-
     const today = new Date();
     this.todayDate = `📅 今日日期：${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日`;
     this.fetchWeather();
+    this.fetchPopularRecipes();
   },
   beforeRouteLeave(to, from, next) {
     if (this.$refs.bgMusic) {
@@ -210,16 +246,14 @@ export default {
   padding: 20px 300px;
   border: 1px solid #f0ff6c;
   border-radius: 4px;
-  font-size: 1.5em; /* 字體大兩倍 */
-  width: 100%;    /* 填滿父容器 */
+  font-size: 1.5em;
+  width: 100%;
   box-sizing: border-box;
 }
-
-
 .icook-search-btn {
   margin-left: 8px;
-  padding: 7px 20px;      /* 原本 6px 16px，放大兩倍 */
-  font-size: 2em;          /* 新增，字體放大兩倍 */
+  padding: 7px 20px;
+  font-size: 2em;
   background: #0066ff;
   color: #fff;
   border: none;
@@ -229,4 +263,129 @@ export default {
 .icook-search-btn:hover {
   background: #b800e6;
 }
+
+/* 熱門推薦區塊樣式 */
+.hot-topics-card {
+  margin: 32px auto 0;
+  max-width: 900px;
+  background: #fff8;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px #0001;
+  padding: 32px 24px;
+}
+.hot-topics-title {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #e65c00;
+  letter-spacing: 2px;
+}
+.hot-topics-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+}
+.hot-topic-item {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #0002;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.hot-topic-item:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 6px 20px #0003;
+}
+.hot-topic-item img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  background: #eee;
+}
+.hot-topic-text {
+  padding: 14px 12px 10px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hot-topic-text h3 {
+  font-size: 1.1em;
+  margin: 0 0 4px 0;
+  color: #e65c00;
+  font-weight: bold;
+}
+.hot-topic-text p {
+  font-size: 0.98em;
+  color: #444;
+  margin-bottom: 0;
+  white-space: pre-line;
+}
+.loading, .error {
+  text-align: center;
+  font-size: 1.2em;
+  color: #b94a48;
+  margin: 20px 0;
+}
+.refresh-btn {
+  background: #ffb300;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: background 0.2s, transform 0.1s;
+}
+.refresh-btn:disabled {
+  background: #ccc;
+  color: #888;
+  cursor: not-allowed;
+}
+.refresh-btn:hover:enabled {
+  background: #ff9800;
+  transform: scale(1.08);
+}
+.category-button {
+  border-radius: 20px;
+  padding: 12px 20px;
+  margin: 8px;
+  display: inline-block;
+  font-size: 1.2rem;
+  font-weight: bold;
+  box-shadow: 0 2px 8px #0001;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.category-ai:hover {
+  background: linear-gradient(90deg, #00bcd4, #009688); /* 固定藍綠背景 */
+  filter: brightness(1.1);
+  transform: scale(1.05);
+}
+
+.category-other:hover {
+  background: linear-gradient(90deg, #fe6944, #fb852b); /* 固定橘紅背景 */
+  filter: brightness(1.1);
+  transform: scale(1.05);
+}
+
+
+
+.category-ai {
+  background: linear-gradient(90deg, #00bcd4, #009688); /* 藍綠 */
+}
+
+.category-other {
+  background: linear-gradient(90deg, #fe6944, #fb852b); /* 原橘紅 */
+}
+
+
 </style>
